@@ -1,0 +1,4 @@
+representations/
+antique_20words_bert.pkl
+__pycache__/
+*.pyc
