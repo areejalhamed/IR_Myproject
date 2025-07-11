@@ -1,32 +1,4 @@
-# # tfidf_matching.py
-# import os
-# import joblib
-# import numpy as np
-# from sklearn.metrics.pairwise import cosine_similarity
-
-# REPRESENTATIONS_DIR = "representations"
-
-# def match_query_tfidf(table_name):
-#     #مسار ملف المصفوفة المخزنة لكل المستندات 
-#     matrix_file = os.path.join(REPRESENTATIONS_DIR, f"matrix_{table_name}.pkl")
-#     #مسار ملف  تمثيل الاستعلام 
-#     query_file = os.path.join(REPRESENTATIONS_DIR, "queries", f"tfidf_query_{table_name}.pkl")
-    
-#     if not os.path.exists(matrix_file) or not os.path.exists(query_file):
-#         raise FileNotFoundError("❌ لم يتم العثور على ملفات التمثيل المطلوبة.")
-#     #تحنيل بيانات المستندات 
-#     data = joblib.load(matrix_file)
-#     doc_ids = data["doc_ids"]
-#     matrix = data["matrix"]
-
-#     #تحميل تمثيل الاستعلام 
-#     query_vector = joblib.load(query_file)
-#     #يحسب هنا التشابه  بين كل مستند في المصفوفة و الاستعلام 
-#     scores = cosine_similarity(matrix, query_vector).flatten()
-#     # ترتيب النتائج من الاعلى للاقل 
-#     ranked = sorted(zip(doc_ids, scores), key=lambda x: x[1], reverse=True)
-#     return ranked
-
+#tfidf_match
 import os
 import joblib
 import numpy as np
