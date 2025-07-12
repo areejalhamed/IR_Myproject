@@ -51,3 +51,4 @@ def cluster_documents(table_name, representation, top_results=None, n_clusters=3
         clusters[label].append(doc_info)
 
     return clusters
+

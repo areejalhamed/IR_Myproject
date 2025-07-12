@@ -7,6 +7,7 @@ from sklearn.preprocessing import normalize
 from sentence_transformers import SentenceTransformer, util
 from spellchecker import SpellChecker
 import nltk
+import csv
 from nltk.corpus import wordnet
 from text_cleaner import clean_text
 from clustering import cluster_documents
@@ -23,6 +24,33 @@ os.makedirs(QUERY_REPRESENTATIONS_DIR, exist_ok=True)
 model = SentenceTransformer('all-MiniLM-L6-v2')
 spell = SpellChecker(language='en')
 
+# تحميل وثائق ANTIQUE و تمثيلاتها
+ANTIQUE_PATH = r"C:\Users\DELL\.ir_datasets\antique\collection.tsv"  # غيّر حسب مسارك
+EMBEDDINGS_FILE = "antique_20words_bert.pkl"
+document_texts = []
+
+if os.path.exists(ANTIQUE_PATH):
+    with open(ANTIQUE_PATH, "r", encoding="utf-8") as f:
+        reader = csv.reader(f, delimiter="\t")
+        for row in reader:
+            if len(row) == 2:
+                doc_text = row[1].strip()
+                if doc_text:
+                    short_text = ' '.join(doc_text.split()[:20])
+                    document_texts.append(short_text)
+
+    if os.path.exists(EMBEDDINGS_FILE):
+        print("📂 تحميل تمثيلات ANTIQUE من الملف...")
+        document_embeddings = joblib.load(EMBEDDINGS_FILE)
+    else:
+        print("⚙️ ترميز أول 20 كلمة من الوثائق...")
+        document_embeddings = model.encode(document_texts, convert_to_tensor=True)
+        joblib.dump(document_embeddings, EMBEDDINGS_FILE)
+else:
+    print(f"❌ ملف ANTIQUE غير موجود: {ANTIQUE_PATH}")
+    document_texts = []
+    document_embeddings = None
+
 @app.route("/")
 def serve_interface():
     return send_from_directory(".", "interface.html")
@@ -31,8 +59,10 @@ def correct_spelling(query):
     return ' '.join([spell.correction(w) or w for w in query.split()])
 
 def suggest_similar_queries(query, all_docs, top_k=4):
+    if document_embeddings is None or len(all_docs) == 0:
+        return []
     q_vec = model.encode(query, convert_to_tensor=True)
-    scores = util.cos_sim(q_vec, all_docs)[0]
+    scores = util.cos_sim(q_vec, document_embeddings)[0]
     top = scores.topk(k=top_k)
     return [all_docs[i] for i in top.indices]
 
@@ -47,14 +77,15 @@ def expand_query(query):
 @app.route("/refine_query", methods=["POST"])
 def refine_query():
     data = request.get_json()
-    user_query = data["query"]
+    user_query = data.get("query", "")
 
     corrected = correct_spelling(user_query)
+    similar = suggest_similar_queries(corrected, document_texts)
     expanded = expand_query(corrected)
 
     return jsonify({
         "corrected_query": corrected,
-        "similar_queries": [],
+        "similar_queries": similar,
         "expanded_terms": expanded
     })
 
@@ -236,3 +267,4 @@ def match_query_hybrid(table_name):
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000) 
+
